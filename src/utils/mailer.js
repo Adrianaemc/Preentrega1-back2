@@ -1,26 +1,30 @@
 import nodemailer from 'nodemailer';
 import dotenv from 'dotenv';
+
 dotenv.config();
 
-export const transporter = nodemailer.createTransport({
+const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
-    user: process.env.MAIL_USER,
-    pass: process.env.MAIL_PASS
-  }
+    user: process.env.GMAIL_USER,
+    pass: process.env.GMAIL_PASS,
+  },
 });
 
-export const sendResetEmail = async (email, token) => {
+export const sendPasswordResetEmail = async (to, token) => {
   const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${token}`;
-  
-  await transporter.sendMail({
-    from: `"Coder Ecommerce" <${process.env.MAIL_USER}>`,
-    to: email,
-    subject: "Recuperación de contraseña",
+
+  const mailOptions = {
+    from: `"Soporte WorkPortal" <${process.env.GMAIL_USER}>`,
+    to,
+    subject: 'Restablecer contraseña',
     html: `
-      <p>Hiciste una solicitud de restablecimiento de contraseña.</p>
-      <p><a href="${resetLink}">Haz clic aquí para restablecer tu contraseña</a></p>
-      <p>Este enlace expirará en 1 hora.</p>
-    `
-  });
+      <p>Solicitaste restablecer tu contraseña.</p>
+      <p>Hacé clic en el siguiente enlace para continuar:</p>
+      <a href="${resetLink}">${resetLink}</a>
+      <p>Si no fuiste vos, ignorá este mensaje.</p>
+    `,
+  };
+
+  await transporter.sendMail(mailOptions);
 };
