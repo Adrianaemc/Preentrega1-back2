@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { Product } from '../models/Product.js';
+import passport from 'passport';
+import { requireRole } from '../middleware/auth.js'; 
 
 const router = Router();
 
-// GET /api/products/ — Con paginación, filtro y sort
+// GET /api/products/ — Con paginación, filtro y sort (público)
 router.get('/', async (req, res) => {
   try {
     const { limit = 10, page = 1, sort, query } = req.query;
@@ -51,7 +53,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /api/products/:pid — Buscar por ID
+// GET /api/products/:pid — Buscar por ID (público)
 router.get('/:pid', async (req, res) => {
   try {
     const product = await Product.findById(req.params.pid).lean();
@@ -64,73 +66,83 @@ router.get('/:pid', async (req, res) => {
   }
 });
 
+// POST /api/products - Agregar producto (solo ADMIN)
+router.post('/',
+  passport.authenticate('jwt', { session: false }),
+  requireRole('admin'),
+  async (req, res) => {
+    const body = req.body;
 
-// POST /api/products - Agregar uno o varios productos
-router.post('/', async (req, res) => {
-  const body = req.body;
+    // Si es un array => carga masiva
+    if (Array.isArray(body)) {
+      try {
+        const createdProducts = await Product.insertMany(body);
+        return res.status(201).json({
+          message: 'Productos cargados correctamente',
+          products: createdProducts
+        });
+      } catch (error) {
+        return res.status(500).json({ error: 'Error al cargar productos', details: error.message });
+      }
+    }
 
-  // Si es un array => carga masiva
-  if (Array.isArray(body)) {
+    // Si es un solo objeto => carga individual
+    const { title, description, code, price, status = true, stock, category, thumbnails = [] } = body;
+
+    if (!title || !description || !code || !price || !stock || !category) {
+      return res.status(400).json({ error: 'Faltan campos obligatorios' });
+    }
+
     try {
-      const createdProducts = await Product.insertMany(body);
-      return res.status(201).json({
-        message: 'Productos cargados correctamente',
-        products: createdProducts
+      const newProduct = await Product.create({
+        title,
+        description,
+        code,
+        price,
+        status,
+        stock,
+        category,
+        thumbnails
       });
+      res.status(201).json({ message: 'Producto creado', product: newProduct });
     } catch (error) {
-      return res.status(500).json({ error: 'Error al cargar productos', details: error.message });
+      res.status(500).json({ error: 'Error al crear el producto', details: error.message });
     }
   }
+);
 
-  // Si es un solo objeto => carga individual
-  const { title, description, code, price, status = true, stock, category, thumbnails = [] } = body;
-
-  if (!title || !description || !code || !price || !stock || !category) {
-    return res.status(400).json({ error: 'Faltan campos obligatorios' });
-  }
-
-  try {
-    const newProduct = await Product.create({
-      title,
-      description,
-      code,
-      price,
-      status,
-      stock,
-      category,
-      thumbnails
-    });
-    res.status(201).json({ message: 'Producto creado', product: newProduct });
-  } catch (error) {
-    res.status(500).json({ error: 'Error al crear el producto', details: error.message });
-  }
-});
-
-
-// PUT /api/products/:pid — Actualizar producto
-router.put('/:pid', async (req, res) => {
-  try {
-    const updated = await Product.findByIdAndUpdate(req.params.pid, req.body, { new: true });
-    if (!updated) {
-      return res.status(404).json({ error: 'Producto no encontrado' });
+// PUT /api/products/:pid — Actualizar producto (solo ADMIN)
+router.put('/:pid',
+  passport.authenticate('jwt', { session: false }),
+  requireRole('admin'),
+  async (req, res) => {
+    try {
+      const updated = await Product.findByIdAndUpdate(req.params.pid, req.body, { new: true });
+      if (!updated) {
+        return res.status(404).json({ error: 'Producto no encontrado' });
+      }
+      res.json({ message: 'Producto actualizado', product: updated });
+    } catch (error) {
+      res.status(500).json({ error: 'ID inválido o error de actualización' });
     }
-    res.json({ message: 'Producto actualizado', product: updated });
-  } catch (error) {
-    res.status(500).json({ error: 'ID inválido o error de actualización' });
   }
-});
+);
 
-// DELETE /api/products/:pid — Eliminar producto
-router.delete('/:pid', async (req, res) => {
-  try {
-    const deleted = await Product.findByIdAndDelete(req.params.pid);
-    if (!deleted) {
-      return res.status(404).json({ error: 'Producto no encontrado' });
+// DELETE /api/products/:pid — Eliminar producto (solo ADMIN)
+router.delete('/:pid',
+  passport.authenticate('jwt', { session: false }),
+  requireRole('admin'),
+  async (req, res) => {
+    try {
+      const deleted = await Product.findByIdAndDelete(req.params.pid);
+      if (!deleted) {
+        return res.status(404).json({ error: 'Producto no encontrado' });
+      }
+      res.json({ message: 'Producto eliminado' });
+    } catch (error) {
+      res.status(500).json({ error: 'ID inválido o error al eliminar' });
     }
-    res.json({ message: 'Producto eliminado' });
-  } catch (error) {
-    res.status(500).json({ error: 'ID inválido o error al eliminar' });
   }
-});
+);
 
 export default router;
