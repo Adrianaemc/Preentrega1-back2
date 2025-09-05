@@ -3,7 +3,7 @@ import { Cart } from '../models/Cart.js';
 import { Product } from '../models/Product.js';
 import { Ticket } from '../models/Ticket.js';
 import passport from 'passport';
-import { requireRole } from '../middlewares/authorization.js';
+import { requireRole } from '../middleware/auth.js';
 import { v4 as uuidv4 } from 'uuid';
 
 const router = Router();
