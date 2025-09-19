@@ -5,7 +5,11 @@ export class TicketRepository {
     this.dao = new TicketDAO();
   }
 
-  createTicket(ticketData) {
+  create(ticketData) {
     return this.dao.createTicket(ticketData);
+  }
+
+  getById(id) {
+    return this.dao.getById(id);
   }
 }

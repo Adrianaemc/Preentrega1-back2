@@ -1,6 +1,7 @@
-export class UserDTO {
+export default class UserDTO {
   constructor(user) {
-    this.name = `${user.first_name} ${user.last_name}`;
+    this.id = user._id;
+    this.name = `${user.first_name} ${user.last_name}`.trim();
     this.email = user.email;
     this.age = user.age;
     this.role = user.role;

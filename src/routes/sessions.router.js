@@ -4,7 +4,7 @@ import passport from 'passport';
 import { User } from '../models/User.js';
 import { createHash, isValidPassword } from '../utils/auth.js';
 import { generateToken, generateResetToken, verifyToken } from '../utils/jwt.js';
-import { UserDTO } from '../dto/user.dto.js';
+import UserDTO from '../dto/user.dto.js';
 import { sendPasswordResetEmail } from '../utils/mailer.js';
 
 dotenv.config();

@@ -4,4 +4,8 @@ export class TicketDAO {
   async createTicket(ticketData) {
     return await Ticket.create(ticketData);
   }
+
+  async getById(id) {
+    return await Ticket.findById(id);
+  }
 }
